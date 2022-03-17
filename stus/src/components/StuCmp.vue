@@ -1,49 +1,49 @@
 <template>
   <div>
     <label>姓名：</label>
-    <input type="text" v-model="stu.sname" />
+    <input type="text" placeholder="请输入姓名" v-model="stu.sname" />
     <br />
     <label>生日：</label>
-    <input type="date" v-model="stu.birth" />
+    <input type="date" placeholder="请输入生日" v-model="stu.birth" />
     <br />
     <label>性别：</label>
     <input type="radio" name="sex" value="男" v-model="stu.sex" />男
     <input type="radio" name="sex" value="女" v-model="stu.sex" />女
     <br />
     <label>电话：</label>
-    <input type="tel" v-model="stu.mobile" />
+    <input type="tel" placeholder="请输入电话" v-model="stu.mobile" />
     <br />
     <input type="button" value="保存" @click="add" />
-    <br />
-    <input type="text" placeholder="输入查询条件" v-model="qs" />
     <div>
-      <table border="1">
-        <tr>
-          <th>姓名</th>
-          <th>生日</th>
-          <th>性别</th>
-          <th>电话</th>
-          <th>操作</th>
-        </tr>
-        <tr v-for="(s, i) of stus.value" :key="i">
-          <td>{{ s.id }}</td>
-          <td>{{ s.sname }}</td>
-          <td>{{ s.birth }}</td>
-          <td>{{ s.sex }}</td>
-          <td>{{ s.mobile }}</td>
-          <td>
-            <input type="button" value="删除" @click="del" />
-            <input type="button" value="修改" @click="update" />
-          </td>
-        </tr>
-      </table>
+      <input type="text" placeholder="请输入查询条件" v-model="qs" />
     </div>
+    <table border="1">
+      <tr>
+        <th>编号</th>
+        <th>姓名</th>
+        <th>生日</th>
+        <th>性别</th>
+        <th>电话</th>
+        <th>操作</th>
+      </tr>
+      <tr v-for="(s, i) of stus.value" :key="i">
+        <td>{{ s.id }}</td>
+        <td>{{ s.sname }}</td>
+        <td>{{ s.birth }}</td>
+        <td>{{ s.sex }}</td>
+        <td>{{ s.mobile }}</td>
+        <td>
+          <input type="button" value="删除" @click="del(s.id)" />
+          <input type="button" value="修改" @click="edit(s.id)" />
+        </td>
+      </tr>
+    </table>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import { ref, reactive, watch } from "vue";
+import { ref, watch, reactive } from "vue";
 import Qs from "qs";
 export default {
   setup() {
@@ -58,9 +58,10 @@ export default {
     });
     const qey = (name) => {
       axios
-        .get("", { params: { nm: name } })
+        .get("/ajax/qy", { params: { nm: name } })
         .then((resp) => {
-          console.log(resp.data);
+          // console.log(resp.data);
+          stus.value = resp.data;
         })
         .catch((err) => {
           console.log(err);
@@ -69,36 +70,77 @@ export default {
     watch(
       qs,
       (val) => {
-        qey();
+        //   console.log(val);
+        qey(val);
       },
-      { immmediate: true }
+      { immediate: true }
     );
+
     const add = () => {
-      console.log("添加");
+      //   console.log("执行添加");
+      axios
+        .post("/ajax/save", Qs.stringify(stu))
+        .then((resp) => {
+          console.log(stu);
+          if (resp.data.ret > 0) {
+            qs.value = stu.sname;
+            stu.id = "";
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     };
-    const update = () => {
-      console.log("修改");
+
+    const del = (id) => {
+      console.log(id);
+      axios
+        .get("/ajax/del", { params: { id: id } })
+        .then((resp) => {
+          //   console.log(stu);
+          if (resp.data.ret > 0) {
+            qey("");
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     };
-    const del = () => {
-      console.log("删除");
+
+    const edit = (id) => {
+      axios
+        .get("/ajax/detail", { params: { id: id } })
+        .then((resp) => {
+          // console.log(resp.data);
+          let { sname, birth, sex, mobile } = resp.data;
+          stu.id = id;
+          stu.sname = sname;
+          stu.birth = birth;
+          stu.sex = sex;
+          stu.mobile = mobile;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     };
+
     return {
       qs,
-      stu,
       stus,
+      stu,
       add,
-      update,
       del,
+      edit,
     };
   },
 };
 </script>
-
+    
 <style>
+input {
+  margin: 5px;
+}
 table {
   margin: 0 auto;
-}
-div {
-  margin: 20px;
 }
 </style>
